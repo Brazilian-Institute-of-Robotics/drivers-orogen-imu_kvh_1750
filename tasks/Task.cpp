@@ -21,6 +21,8 @@ Task::~Task()
 
 fog_kvh_1750::Driver fog_driver;
 fog_acceleration acc;
+fog_rotation_delta rotation_delta;
+fog_simple_orientation simple_orientation;
 
 /// The following lines are template definitions for the various state machine
 // hooks defined by Orocos::RTT. See Task.hpp for more detailed
@@ -48,8 +50,12 @@ void Task::updateHook()
     fog_driver.read();
 
     acc = fog_driver.getAcceleration();
-    std::cout << "acc.x = " << acc.x << std::endl;
+    rotation_delta = fog_driver.getRotationDelta();
+    simple_orientation = fog_driver.getSimpleOrientation();
+//    std::cout << "acc.x = " << acc.x << std::endl;
     _acceleration.write(acc);
+    _rotation_delta.write(rotation_delta);
+    _simple_orientation.write(simple_orientation);
 }
 
 void Task::errorHook()
