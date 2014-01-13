@@ -1,0 +1,11 @@
+<package>
+  <description brief="fiber-optic gyro KVH 1750">
+  
+  </description>
+  <author>Christopher Gaudig/christopher.gaudig@dfki.de</author>
+  <license></license>
+  <url>http://</url>
+  <logo>http://</logo>
+  <depend package="base/cmake" />
+  <depend package="drivers/imu_kvh_1750" />
+</package>
