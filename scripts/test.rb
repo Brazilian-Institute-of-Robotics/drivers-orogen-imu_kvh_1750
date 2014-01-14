@@ -7,14 +7,14 @@ if !ARGV[0]
     exit 1
 end
 
-ENV['PKG_CONFIG_PATH'] = "#{File.expand_path("..", File.dirname(__FILE__))}/build:#{ENV['PKG_CONFIG_PATH']}"
+#ENV['PKG_CONFIG_PATH'] = "#{File.expand_path("..", File.dirname(__FILE__))}/build:#{ENV['PKG_CONFIG_PATH']}"
 
 Orocos.initialize
 
-Orocos.run 'orogen_default_fog_kvh_1750__Task' do
+Orocos.run 'imu_kvh_1750::Task' => 'imu' do
     Orocos.log_all_ports
 
-    fog = Orocos.name_service.get 'orogen_default_fog_kvh_1750__Task'
+    fog = Orocos.name_service.get 'imu'
 
     fog.device = ARGV[0]
 
@@ -26,10 +26,6 @@ Orocos.run 'orogen_default_fog_kvh_1750__Task' do
 #    Vizkit.display hokuyo.scans
 #    Vizkit.exec
 
-    loop do
-       sleep 0.1
-    end
-    
-    fog.stop
+    Orocos.watch(fog)
 end
 
