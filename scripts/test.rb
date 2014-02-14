@@ -1,5 +1,5 @@
 require 'orocos'
-require 'vizkit'
+#require 'vizkit'
 include Orocos
 
 if !ARGV[0]
