@@ -2,6 +2,7 @@
 
 #include "Task.hpp"
 #include <imu_kvh_1750/Driver.hpp>
+#include <base/samples/IMUSensors.hpp>
 
 using namespace imu_kvh_1750;
 
@@ -19,10 +20,8 @@ Task::~Task()
 {
 }
 
-imu_kvh_1750::Driver fog_driver;
-fog_acceleration acc;
-fog_rotation_delta rotation_delta;
-fog_simple_orientation simple_orientation;
+imu_kvh_1750::Driver kvh_driver;
+base::samples::IMUSensors imu;
 
 /// The following lines are template definitions for the various state machine
 // hooks defined by Orocos::RTT. See Task.hpp for more detailed
@@ -39,7 +38,8 @@ bool Task::startHook()
     if (! TaskBase::startHook())
         return false;
 
-    fog_driver.open(_device);
+    kvh_driver.open(_device);
+    kvh_driver.setReadTimeout(base::Time::fromSeconds(2));
 
     return true;
 }
@@ -47,15 +47,9 @@ void Task::updateHook()
 {
     TaskBase::updateHook();
 
-    fog_driver.read();
-
-    acc = fog_driver.getAcceleration();
-    rotation_delta = fog_driver.getRotationDelta();
-    simple_orientation = fog_driver.getSimpleOrientation();
-//    std::cout << "acc.x = " << acc.x << std::endl;
-    _acceleration.write(acc);
-    _rotation_delta.write(rotation_delta);
-    _simple_orientation.write(simple_orientation);
+    kvh_driver.read();
+    imu = kvh_driver.getIMUReading();
+    _imu.write(imu);
 }
 
 void Task::errorHook()

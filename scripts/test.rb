@@ -22,10 +22,6 @@ Orocos.run 'imu_kvh_1750::Task' => 'imu' do
     fog.start
     puts "done."
 
-#    Vizkit::UiLoader.register_default_widget_for "RangeView", "/base/samples/LaserScan"
-#    Vizkit.display hokuyo.scans
-#    Vizkit.exec
-
     Orocos.watch(fog)
 end
 

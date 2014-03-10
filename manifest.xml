@@ -3,9 +3,11 @@
   
   </description>
   <author>Christopher Gaudig/christopher.gaudig@dfki.de</author>
+  <author>Leif Christensen/leif.christensen@dfki.de</author>
   <license></license>
   <url>http://</url>
   <logo>http://</logo>
   <depend package="base/cmake" />
+  <depend package="base/types" />
   <depend package="drivers/imu_kvh_1750" />
 </package>

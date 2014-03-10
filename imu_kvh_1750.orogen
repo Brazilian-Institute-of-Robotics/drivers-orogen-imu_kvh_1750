@@ -4,14 +4,14 @@ name "imu_kvh_1750"
 
 # If new data types need to be defined, they have to be put in a separate C++
 # header, and this header will be loaded here
-import_types_from "imu_kvh_1750Types.hpp"
+import_types_from "base"
 # Finally, it is pretty common that headers are directly loaded from an external
 # library. In this case, the library must be first used (the name is the
 # library's pkg-config name) and then the header can be used. Following Rock
 # conventions, a common use-case would be:
 #
 using_library "imu_kvh_1750"
-import_types_from "imu_kvh_1750/KVH1750Types.hpp"
+#import_types_from "imu_kvh_1750/KVH1750Types.hpp"
 
 # If this project uses data types that are defined in other oroGen projects,
 # these projects should be imported there as well.
@@ -43,10 +43,7 @@ task_context "Task" do
     #
     # Data can be written using _output.write(value). _output.connected() returns
     # if this output is connected to an input or not.
-    output_port "acceleration", "fog_acceleration"
-    output_port "rotation_delta", "fog_rotation_delta"
-    output_port "simple_orientation", "fog_simple_orientation"
-
+    output_port "imu", "base/samples/IMUSensors"
 
     # If you want that component's updateHook() to be executed when the "input"
     # port gets data, uncomment this and comment the 'periodic' line
