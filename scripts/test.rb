@@ -7,21 +7,19 @@ if !ARGV[0]
     exit 1
 end
 
-#ENV['PKG_CONFIG_PATH'] = "#{File.expand_path("..", File.dirname(__FILE__))}/build:#{ENV['PKG_CONFIG_PATH']}"
-
 Orocos.initialize
 
 Orocos.run 'imu_kvh_1750::Task' => 'imu' do
-    Orocos.log_all_ports
+#    Orocos.log_all_ports
 
-    fog = Orocos.name_service.get 'imu'
+    imu = Orocos.name_service.get 'imu'
 
-    fog.device = ARGV[0]
+    imu.device = ARGV[0]
 
-    fog.configure
-    fog.start
+    imu.configure
+    imu.start
     puts "done."
 
-    Orocos.watch(fog)
+    Orocos.watch(imu)
 end
 

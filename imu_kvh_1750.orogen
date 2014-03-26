@@ -1,54 +1,64 @@
 name "imu_kvh_1750"
-# Optionally declare the version number
-# version "0.1"
 
-# If new data types need to be defined, they have to be put in a separate C++
-# header, and this header will be loaded here
 import_types_from "base"
-# Finally, it is pretty common that headers are directly loaded from an external
-# library. In this case, the library must be first used (the name is the
-# library's pkg-config name) and then the header can be used. Following Rock
-# conventions, a common use-case would be:
-#
+import_types_from "imu_kvh_1750Types.hpp"
 using_library "imu_kvh_1750"
-#import_types_from "imu_kvh_1750/KVH1750Types.hpp"
+using_library 'quater_ikf'
+using_library 'aggregator'
+import_types_from 'aggregator'
 
-# If this project uses data types that are defined in other oroGen projects,
-# these projects should be imported there as well.
-# import_types_from "base"
-
-# Declare a new task context (i.e., a component)
-#
-# The corresponding C++ class can be edited in tasks/Task.hpp and
-# tasks/Task.cpp, and will be put in the imu_kvh_1750 namespace.
 task_context "Task" do
-    # This is the default from now on, and should not be removed. Rock will
-    # transition to a setup where all components use a configuration step.
-    needs_configuration
+  needs_configuration
 
-    # A configuration property (here, a std::string). Its value can be retrieved
-    # in the C++ code with # _config_value.get() and _config_value.set(new_value).
+  property "device", "string" ,"/dev/ttyUSB0"
 
-    property "device", "string" ,"/dev/ttyUSB0"
-    # An input port, i.e. an object from which the component gets data from
-    # other components' outputs
-    #
-    # Data can be retrieved using _input.read(value), which returns true if data
-    # was available, and false otherwise. _input.connected() returns if this
-    # input is connected to an output or not.
-#input_port "input", "/std/string"
+  property('use_filter', 'bool', true).
+      doc 'set to true to active the attitude estimation filter, set false otherwise.'+
+      'In true mode inertial sensors output port will be compensated and calibrated values'+
+      'In false mode inertial sensors output will be only calibrated values'
 
-    # An output port, i.e. an object to which the component pushes data so that
-    # it is transmitted to other components' inputs
-    #
-    # Data can be written using _output.write(value). _output.connected() returns
-    # if this output is connected to an input or not.
-    output_port "imu", "base/samples/IMUSensors"
+  #****************************
+  #**** Filter Properties *****
+  #****************************
+  property('filter_configuration', 'imu_kvh_1750/FilterConfiguration').
+      doc 'General configuration values to run the task'
 
-    # If you want that component's updateHook() to be executed when the "input"
-    # port gets data, uncomment this and comment the 'periodic' line
-    # port_driven "input"
-    # By default, the task will be periodic with a period of 0.1
-    periodic 0.01
+  #*********************************************
+  #**** Inertial Measurement Unit Properties ***
+  #*********************************************
+  property('inertial_noise','imu_kvh_1750/InertialNoiseParameters').
+      doc 'Inertial Sensors property.'
+
+  #****************************
+  #**** Adaptive Properties ***
+  #****************************
+  property('adaptive_config_acc', 'imu_kvh_1750/AdaptiveAttitudeConfig').
+      doc 'Adaptive estimation of external acceleration.'
+
+  #******************************
+  #**** Location Properties *****
+  #******************************
+  property('location',"imu_kvh_1750/LocationConfiguration").
+      doc 'Localization properties related to the geographic place (i.e.: latitude, longitude, magnetic declination).'
+
+
+  #******************************
+  #******* Output Ports *********
+  #******************************
+  output_port('calibrated_sensors', '/base/samples/IMUSensors').
+      doc 'provides timestamped IMUReading samples containing the calibrated or compensated sensor readings depending on the mode'+
+      'Calibrated values are temperature corrected as the device reports the values (linear acceleration and angular velocity).'+
+      'Compensated values are Earth gravity/rotation and bias compensated angular velocity and linear acceleration from the filter.'
+
+  output_port('orientation_samples_out', '/base/samples/RigidBodyState').
+      doc 'provides timestamped IMU orientation samples containing the quaternion.'
+
+  output_port('temp_sensors', '/imu_kvh_1750/Temperature').
+      doc 'provides timestamped Temperature information for gyros).'
+
+  output_port('timestamp_estimator_status', 'aggregator::TimestampEstimatorStatus').
+      doc("Debug output of the TimestampEstimator")
+
+  fd_driven
 end
 
