@@ -53,9 +53,6 @@ task_context "Task" do
   output_port('orientation_samples_out', '/base/samples/RigidBodyState').
       doc 'provides timestamped IMU orientation samples containing the quaternion.'
 
-  output_port('temp_sensors', '/imu_kvh_1750/Temperature').
-      doc 'provides timestamped Temperature information for gyros).'
-
   output_port('timestamp_estimator_status', 'aggregator::TimestampEstimatorStatus').
       doc("Debug output of the TimestampEstimator")
 

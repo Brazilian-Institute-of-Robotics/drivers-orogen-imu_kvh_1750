@@ -6,6 +6,7 @@
 #include "imu_kvh_1750/TaskBase.hpp"
 #include <aggregator/TimestampEstimator.hpp>
 #include <quater_ikf/Ikf.hpp>
+#include <imu_kvh_1750/Driver.hpp>
 
 namespace imu_kvh_1750 {
 
@@ -73,7 +74,7 @@ namespace imu_kvh_1750 {
         /** Initial values of Accelerometers/Inclinometers for Pitch and Roll calculation */
         Eigen::Matrix <double, 3, Eigen::Dynamic> init_leveling_samples;
 
-        filter::Ikf<double, true, true> myfilter; /** The adaptive Indirect Kalman filter */
+        filter::Ikf<double, true, false> myfilter; /** The adaptive Indirect Kalman filter */
 
         Eigen::Quaterniond deltaquat, deltahead, attitude;
 
@@ -163,7 +164,6 @@ namespace imu_kvh_1750 {
          * before calling start() again.
          */
         void cleanupHook();
-    };
 
         /** Performs heading independent integration
         */
@@ -172,7 +172,7 @@ namespace imu_kvh_1750 {
 
         /** @brief Port out the values
 	 */
-        void outputPortSamples(stim300::Stim300Base *driver, filter::Ikf<double, true, true> &myfilter, const base::samples::IMUSensors &imusamples);
+        void outputPortSamples(imu_kvh_1750::Driver *driver, filter::Ikf<double, true, false> &myfilter, const base::samples::IMUSensors &imusamples);
 
         /**
 	* @brief This computes the theoretical gravity value according to the WGS-84 ellipsoid Earth model.
@@ -258,8 +258,7 @@ namespace imu_kvh_1750 {
             return deltaq;
         };
 
-};
-}
+    };
 }
 
 #endif

@@ -7,25 +7,6 @@
 
 namespace imu_kvh_1750 {
 
-    enum FIRMWARE_REVISIONS{REV_A, REV_B, REV_C, REV_D};
-
-    /** IMU_KVH_1750 temperature sensor **/
-    struct Temperature
-    {
-	base::Time time;
-	std::vector<base::Temperature> temp;
-	
-	void resize(int size)
-        {
-                temp.resize(size);
-        }
-
-        size_t size()
-        {
-            return temp.size();
-        }
-    };
-
     /** Filter Configuration **/
     struct FilterConfiguration
     {

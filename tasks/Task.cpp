@@ -188,17 +188,20 @@ bool Task::startHook()
 //TODO change copied stim300 code to imu_kvh_1750
 void Task::updateHook()
 {
+    base::samples::IMUReading imusamples;
     TaskBase::updateHook();
 
     kvh_driver.read();
-    imu = kvh_driver.getIMUReading();
+    imusamples = kvh_driver.getIMUReading();
 
     /** Time is current time minus the latency **/
-    base::Time recvts = base::Time::now() - base::Time::fromMicroseconds(stim300_driver->getPacketLatency());
+    //base::Time recvts = base::Time::now() - base::Time::fromMicroseconds(stim300_driver->getPacketLatency());
+    base::Time recvts = base::Time::now();//no latency estimation from KVH sensor available
 
-    int packet_counter = stim300_driver->getPacketCounter();
-
-    base::Time ts = timestamp_estimator->update(recvts,packet_counter);
+    //TODO include packet counter from imu_kvh_1750 into timestamp estimator update
+    //int packet_counter = stim300_driver->getPacketCounter();
+    //base::Time ts = timestamp_estimator->update(recvts,packet_counter);
+    base::Time ts = timestamp_estimator->update(recvts);
     base::Time diffTime = ts - prev_ts;
 
     imusamples.time = ts;
@@ -206,13 +209,6 @@ void Task::updateHook()
     #ifdef DEBUG_PRINTS
     std::cout<<"Delta time[s]: "<<diffTime.toSeconds()<<"\n";
     #endif
-
-    /** Checksum is good: Take the sensor values from the driver **/
-    if (stim300_driver->getChecksumStatus())// && stim300_driver->getStatus())
-    {
-        imusamples.gyro = stim300_driver->getGyroData();
-        imusamples.acc = stim300_driver->getAccData();
-        imusamples.mag = stim300_driver->getInclData();//!Short term solution: the mag carries inclinometers info (FINAL SOLUTION REQUIRES: e.g. to change IMUSensor base/types)
 
         if (_use_filter.value())
         {
@@ -295,16 +291,11 @@ void Task::updateHook()
             }
         }
     }
-    else
-    {
-        //std::cout<<"STIM300 Checksum error\n";
-        RTT::log(RTT::Fatal)<<"[STIM300] Datagram Checksum ERROR."<<RTT::endlog();
-    }
 
 //    stim300_driver->printInfo();
 
     /** Output information **/
-    this->outputPortSamples(stim300_driver, myfilter, imusamples);
+    this->outputPortSamples(kvh_driver, myfilter, imusamples);
 
     _calibrated_sensors.write(imu);
 }
@@ -354,20 +345,10 @@ Eigen::Quaternion<double> Task::deltaHeading(const Eigen::Vector3d &angvelo, Eig
     return deltahead;
 }
 
-void Task::outputPortSamples(stim300::Stim300Base *driver, filter::Ikf<double, true, true> &myfilter, const base::samples::IMUSensors &imusamples)
+void Task::outputPortSamples(imu_kvh_1750::Driver *driver, filter::Ikf<double, true, false> &myfilter, const base::samples::IMUSensors &imusamples)
 {
     Eigen::Matrix <double,IKFSTATEVECTORSIZE,IKFSTATEVECTORSIZE> Pk = myfilter.getCovariance();
     base::samples::IMUSensors compensatedSamples;
-
-    /** Temperature sensors **/
-    stim300::Temperature tempSensor;
-    tempSensor.time = imusamples.time;
-    tempSensor.resize(driver->getTempData().size());
-
-    for (size_t i=0; i<tempSensor.size(); ++i)
-        tempSensor.temp[i] = base::Temperature::fromCelsius(stim300_driver->getTempData()[i]);
-    _temp_sensors.write(tempSensor);
-
 
     if (_use_filter.value())
     {
