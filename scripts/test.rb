@@ -2,19 +2,26 @@ require 'orocos'
 #require 'vizkit'
 include Orocos
 
-if !ARGV[0]
-    STDERR.puts "usage: test.rb <device name>"
-    exit 1
-end
+#if !ARGV[0]
+#    STDERR.puts "usage: test.rb <device name>"
+#    exit 1
+#end
 
 Orocos.initialize
 
 Orocos.run 'imu_kvh_1750::Task' => 'imu' do
 #    Orocos.log_all_ports
 
+    Orocos.conf.load_dir('../config')
     imu = Orocos.name_service.get 'imu'
 
-    imu.device = ARGV[0]
+    Orocos.conf.apply(imu, ['default','Bremen','imu_kvh_1750'], :override => true)
+
+
+#    imu.device = ARGV[0]
+    imu.device = "serial:///dev/ttyUSB0:921600"
+    imu.timeout = 8 
+    imu.use_filter = true
 
     imu.configure
     imu.start
