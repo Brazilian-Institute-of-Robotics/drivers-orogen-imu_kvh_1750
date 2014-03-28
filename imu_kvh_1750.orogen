@@ -12,6 +12,11 @@ task_context "Task" do
 
   property "device", "string" ,"/dev/ttyUSB0"
 
+#TODO timeout
+    property('timeout', 'int', 8).
+        doc 'the expected time (in milliseconds) to have a whole package in the fd'+
+	'by default 8 millisecond (0.008 seconds) which corresponds to 125Hz.'
+
   property('use_filter', 'bool', true).
       doc 'set to true to active the attitude estimation filter, set false otherwise.'+
       'In true mode inertial sensors output port will be compensated and calibrated values'+
@@ -34,6 +39,9 @@ task_context "Task" do
   #****************************
   property('adaptive_config_acc', 'imu_kvh_1750/AdaptiveAttitudeConfig').
       doc 'Adaptive estimation of external acceleration.'
+
+    property('adaptive_config_inc', 'imu_kvh_1750/AdaptiveAttitudeConfig').
+        doc 'Adaptive estimation of external inclinometers.'
 
   #******************************
   #**** Location Properties *****

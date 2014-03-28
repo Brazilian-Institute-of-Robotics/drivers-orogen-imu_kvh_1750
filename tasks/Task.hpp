@@ -7,6 +7,7 @@
 #include <aggregator/TimestampEstimator.hpp>
 #include <quater_ikf/Ikf.hpp>
 #include <imu_kvh_1750/Driver.hpp>
+#include <rtt/extras/FileDescriptorActivity.hpp>
 
 namespace imu_kvh_1750 {
 
@@ -20,7 +21,7 @@ namespace imu_kvh_1750 {
   static const double EARTHW = 7.292115e-05; /** Earth angular velocity in rad/s **/
 
   enum CONST {
-    IKFSTATEVECTORSIZE = filter::Ikf<double, true, true>::IKFSTATEVECTORSIZE
+    IKFSTATEVECTORSIZE = filter::Ikf<double, true, false>::IKFSTATEVECTORSIZE
   };
 
   static const double GRAVITY_MARGING = 0.3; /** Accepted error for the gravity value **/

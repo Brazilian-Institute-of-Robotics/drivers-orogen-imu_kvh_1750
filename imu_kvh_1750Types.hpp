@@ -15,9 +15,9 @@ namespace imu_kvh_1750 {
         std::string target_frame_name; //Output Frame name. Transformation: source -> target
 
         bool use_samples_as_theoretical_gravity;//Inclinometers are more stable than accelerometers at initial time.
-                                                    //They cloud be use as theoretical local gravity value instead of using
+                                                    //They could be used as theoretical local gravity value instead of using
                                                     //some models as WGS-84 ellipsoid Earth.
-                                                    //It will use inclinometers in case use_inclinometers_leveling is true
+                                                    //It will use inclinometers in case use_inclinometers is true
                                                     //and accelerometers otherwise.
         bool use_inclinometers;//Some IMU provide inclinometers as fast and more accurate solution for initial leveling.
                                 //Set True or False to use inclinometers values or not.

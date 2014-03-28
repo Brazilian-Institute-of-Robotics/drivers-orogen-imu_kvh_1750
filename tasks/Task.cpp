@@ -37,7 +37,6 @@ bool Task::configureHook()
     /************************************/
 
     kvh_driver = new imu_kvh_1750::Driver();
-    kvh_driver->setPackageTimeout((uint64_t)_timeout);
     kvh_driver->open(_device);
     fd = kvh_driver->getFileDescriptor();
 
@@ -56,12 +55,12 @@ bool Task::configureHook()
     Eigen::Matrix< double, IKFSTATEVECTORSIZE , 1  > x_0; /** Initial vector state **/
     Eigen::Matrix3d Ra; /** Measurement noise covariance matrix for acc */
     Eigen::Matrix3d Rg; /** Measurement noise covariance matrix for gyros */
-    //Eigen::Matrix3d Rm; /** Measurement noise covariance matrix for mag */
-    //Eigen::Matrix3d Ri; /** Measurement noise covariance matrix for inclinometers */
+    Eigen::Matrix3d Rm; /** Measurement noise covariance matrix for mag */
+    Eigen::Matrix3d Ri; /** Measurement noise covariance matrix for inclinometers */
     Eigen::Matrix <double, IKFSTATEVECTORSIZE, IKFSTATEVECTORSIZE> P_0; /** Initial covariance matrix **/
     Eigen::Matrix3d Qbg; /** Noise for the gyros bias instability **/
     Eigen::Matrix3d Qba; /** Noise for the acc bias instability **/
-    //Eigen::Matrix3d Qbi; /** Noise for the inclinometers bias instability **/
+    Eigen::Matrix3d Qbi; /** Noise for the inclinometers bias instability **/
     double sqrtdelta_t;
 
     /************************/
@@ -70,7 +69,7 @@ bool Task::configureHook()
     config = _filter_configuration.value();
     inertialnoise = _inertial_noise.value();
     adaptiveconfigAcc = _adaptive_config_acc.value();
-    //adaptiveconfigInc = _adaptive_config_inc.value();
+    adaptiveconfigInc = _adaptive_config_inc.value();
     location = _location.value();
 
     /*************************/
@@ -89,15 +88,15 @@ bool Task::configureHook()
     Rg(1,1) = pow(inertialnoise.gyrorw[1]/sqrtdelta_t,2);
     Rg(2,2) = pow(inertialnoise.gyrorw[2]/sqrtdelta_t,2);
 
-    //Rm = Eigen::Matrix3d::Zero();
-    //Rm(0,0) = pow(inertialnoise.magrw[0]/sqrtdelta_t,2);
-    //Rm(1,1) = pow(inertialnoise.magrw[1]/sqrtdelta_t,2);
-    //Rm(2,2) = pow(inertialnoise.magrw[2]/sqrtdelta_t,2);
+    Rm = Eigen::Matrix3d::Zero();
+    Rm(0,0) = pow(inertialnoise.magrw[0]/sqrtdelta_t,2);
+    Rm(1,1) = pow(inertialnoise.magrw[1]/sqrtdelta_t,2);
+    Rm(2,2) = pow(inertialnoise.magrw[2]/sqrtdelta_t,2);
 
-    //Ri = Eigen::Matrix3d::Zero();
-    //Ri(0,0) = inertialnoise.incresolut[0] + pow(inertialnoise.incrw[0]/sqrtdelta_t,2);
-    //Ri(1,1) = inertialnoise.incresolut[1] + pow(inertialnoise.incrw[1]/sqrtdelta_t,2);
-    //Ri(2,2) = inertialnoise.incresolut[2] + pow(inertialnoise.incrw[2]/sqrtdelta_t,2);
+    Ri = Eigen::Matrix3d::Zero();
+    Ri(0,0) = inertialnoise.incresolut[0] + pow(inertialnoise.incrw[0]/sqrtdelta_t,2);
+    Ri(1,1) = inertialnoise.incresolut[1] + pow(inertialnoise.incrw[1]/sqrtdelta_t,2);
+    Ri(2,2) = inertialnoise.incresolut[2] + pow(inertialnoise.incrw[2]/sqrtdelta_t,2);
 
     /** Noise for error in gyros bias instability **/
     //TODO use asDiagonal
@@ -113,10 +112,10 @@ bool Task::configureHook()
     Qba(2,2) = pow(inertialnoise.abiasins[2],2);
 
     /** Noise for error in inclinometers bias instability **/
-    //Qbi.setZero();
-    //Qbi(0,0) = pow(inertialnoise.ibiasins[0],2);
-    //Qbi(1,1) = pow(inertialnoise.ibiasins[1],2);
-    //Qbi(2,2) = pow(inertialnoise.ibiasins[2],2);
+    Qbi.setZero();
+    Qbi(0,0) = pow(inertialnoise.ibiasins[0],2);
+    Qbi(1,1) = pow(inertialnoise.ibiasins[1],2);
+    Qbi(2,2) = pow(inertialnoise.ibiasins[2],2);
 
 
     /** Initial error covariance **/
@@ -124,7 +123,8 @@ bool Task::configureHook()
     P_0.block <3, 3> (0,0) = 1.0e-06 * Eigen::Matrix3d::Identity();//Error quaternion
     P_0.block <3, 3> (3,3) = 1.0e-06 * Eigen::Matrix3d::Identity();//Gyros bias
     P_0.block <3, 3> (6,6) = 1.0e-06 * Eigen::Matrix3d::Identity();//Accelerometers bias
-    //P_0.block <3, 3> (9,9) = 1.0e-06 * Eigen::Matrix3d::Identity();//Inclinometers bias
+    //TODO following may fail for ikfstatevectorsize without inclinometers...
+    P_0.block <3, 3> (9,9) = 1.0e-06 * Eigen::Matrix3d::Identity();//Inclinometers bias
 
     /** Theoretical Gravity **/
     double gravity = GRAVITY;
@@ -185,119 +185,115 @@ bool Task::startHook()
 }
 
 
-//TODO change copied stim300 code to imu_kvh_1750
 void Task::updateHook()
 {
-    base::samples::IMUReading imusamples;
-    TaskBase::updateHook();
+  base::samples::IMUSensors imusamples;
+  TaskBase::updateHook();
 
-    kvh_driver.read();
-    imusamples = kvh_driver.getIMUReading();
+  kvh_driver->read();
+  imusamples = kvh_driver->getIMUReading();
 
-    /** Time is current time minus the latency **/
-    //base::Time recvts = base::Time::now() - base::Time::fromMicroseconds(stim300_driver->getPacketLatency());
-    base::Time recvts = base::Time::now();//no latency estimation from KVH sensor available
+  /** Time is current time minus the latency **/
+  //base::Time recvts = base::Time::now() - base::Time::fromMicroseconds(stim300_driver->getPacketLatency());
+  base::Time recvts = base::Time::now();//no latency estimation from KVH sensor available
 
-    //TODO include packet counter from imu_kvh_1750 into timestamp estimator update
-    //int packet_counter = stim300_driver->getPacketCounter();
-    //base::Time ts = timestamp_estimator->update(recvts,packet_counter);
-    base::Time ts = timestamp_estimator->update(recvts);
-    base::Time diffTime = ts - prev_ts;
+  int packet_counter = kvh_driver->getCounter();
+  base::Time ts = timestamp_estimator->update(recvts,packet_counter);
+  base::Time diffTime = ts - prev_ts;
 
-    imusamples.time = ts;
-    prev_ts = ts;
-    #ifdef DEBUG_PRINTS
-    std::cout<<"Delta time[s]: "<<diffTime.toSeconds()<<"\n";
-    #endif
+  imusamples.time = ts;
+  prev_ts = ts;
+#ifdef DEBUG_PRINTS
+  std::cout<<"Delta time[s]: "<<diffTime.toSeconds()<<"\n";
+#endif
 
-        if (_use_filter.value())
+  if (_use_filter.value())
+  {
+    /** Attitude filter **/
+    if (!initAttitude)
+    {
+#ifdef DEBUG_PRINTS
+      std::cout<<"** [ORIENT_IKF] Initial Attitude["<<init_leveling_idx<<"]\n";
+#endif
+
+      if (config.use_inclinometers)
+        init_leveling_samples.col(init_leveling_idx) = imusamples.mag;
+      else
+        init_leveling_samples.col(init_leveling_idx) = imusamples.acc;
+
+      init_leveling_idx++;
+
+      if (init_leveling_idx >= config.init_leveling_samples)
+      {
+        Eigen::Matrix <double,3,1> meansamples, euler;
+
+        meansamples[0] = init_leveling_samples.row(0).mean();
+        meansamples[1] = init_leveling_samples.row(1).mean();
+        meansamples[2] = init_leveling_samples.row(2).mean();
+
+        if ((config.init_leveling_samples > 0) && (base::isnotnan(meansamples)) &&(meansamples.norm() < (GRAVITY+GRAVITY_MARGING)))
         {
-            /** Attitude filter **/
-            if (!initAttitude)
-            {
-                #ifdef DEBUG_PRINTS
-                std::cout<<"** [ORIENT_IKF] Initial Attitude["<<init_leveling_idx<<"]\n";
-                #endif
+          euler[0] = (double) asin((double)meansamples[1]/ (double)meansamples.norm()); // Roll
+          euler[1] = (double) -atan(meansamples[0]/meansamples[2]); //Pitch
+          euler[2] = M_PI;//Yaw (Work around for STIM3000 in Asguard)
 
-                if (config.use_inclinometers)
-                    init_leveling_samples.col(init_leveling_idx) = imusamples.mag;
-                else
-                    init_leveling_samples.col(init_leveling_idx) = imusamples.acc;
+          /** Set the initial attitude  **/
+          attitude = Eigen::Quaternion <double> (Eigen::AngleAxisd(euler[2], Eigen::Vector3d::UnitZ())*
+              Eigen::AngleAxisd(euler[1], Eigen::Vector3d::UnitY()) *
+              Eigen::AngleAxisd(euler[0], Eigen::Vector3d::UnitX()));
 
-                init_leveling_idx++;
-
-                if (init_leveling_idx >= config.init_leveling_samples)
-                {
-                    Eigen::Matrix <double,3,1> meansamples, euler;
-
-                    meansamples[0] = init_leveling_samples.row(0).mean();
-                    meansamples[1] = init_leveling_samples.row(1).mean();
-                    meansamples[2] = init_leveling_samples.row(2).mean();
-
-                    if ((config.init_leveling_samples > 0) && (base::isnotnan(meansamples)) &&(meansamples.norm() < (GRAVITY+GRAVITY_MARGING)))
-                    {
-                        euler[0] = (double) asin((double)meansamples[1]/ (double)meansamples.norm()); // Roll
-                        euler[1] = (double) -atan(meansamples[0]/meansamples[2]); //Pitch
-                        euler[2] = M_PI;//Yaw (Work around for STIM3000 in Asguard)
-
-                        /** Set the initial attitude  **/
-                        attitude = Eigen::Quaternion <double> (Eigen::AngleAxisd(euler[2], Eigen::Vector3d::UnitZ())*
-                            Eigen::AngleAxisd(euler[1], Eigen::Vector3d::UnitY()) *
-                            Eigen::AngleAxisd(euler[0], Eigen::Vector3d::UnitX()));
-
-                        if (config.use_samples_as_theoretical_gravity)
-                            myfilter.setGravity(meansamples.norm());
-                    }
-                    else
-                    {
-                        attitude.setIdentity();
-                    }
-
-                    myfilter.setAttitude(attitude);
-                    initAttitude = true;
-
-                    #ifdef DEBUG_PRINTS
-                    std::cout<< "******** Initial Attitude  *******"<<"\n";
-                    std::cout<< "Init Roll: "<<euler[0]*R2D<<" Init Pitch: "<<euler[1]*R2D<<" Init Yaw: "<<euler[2]*R2D<<"\n";
-                    #endif
-                }
-            }
-            else
-            {
-                double delta_t = diffTime.toSeconds();
-                Eigen::Vector3d acc, gyro, incl;
-                acc = imusamples.acc; gyro = imusamples.gyro; incl = imusamples.mag;
-
-                /** Eliminate Earth rotation **/
-                if (config.init_leveling_samples > 0)
-                {
-                    Eigen::Quaterniond q_body2world = myfilter.getAttitude().inverse();
-                    SubtractEarthRotation(gyro, q_body2world, location.latitude);
-                    imusamples.gyro = gyro;
-                }
-
-                /** Predict **/
-                myfilter.predict(gyro, delta_t);
-
-                /** Update/Correction **/
-                //myfilter.update(acc, true, incl, config.use_inclinometers);
-
-                /** Delta quaternion of this step **/
-                //deltaquat = attitude.inverse() * myfilter.getAttitude();
-
-                /** Delta quaternion of this step **/
-                //deltahead = deltaHeading(gyro, oldomega, delta_t);
-
-            }
+          if (config.use_samples_as_theoretical_gravity)
+            myfilter.setGravity(meansamples.norm());
         }
+        else
+        {
+          attitude.setIdentity();
+        }
+
+        myfilter.setAttitude(attitude);
+        initAttitude = true;
+
+#ifdef DEBUG_PRINTS
+        std::cout<< "******** Initial Attitude  *******"<<"\n";
+        std::cout<< "Init Roll: "<<euler[0]*R2D<<" Init Pitch: "<<euler[1]*R2D<<" Init Yaw: "<<euler[2]*R2D<<"\n";
+#endif
+      }
     }
+    else
+    {
+      double delta_t = diffTime.toSeconds();
+      Eigen::Vector3d acc, gyro, incl;
+      acc = imusamples.acc; gyro = imusamples.gyro; incl = imusamples.mag;
 
-//    stim300_driver->printInfo();
+      /** Eliminate Earth rotation **/
+      if (config.init_leveling_samples > 0)
+      {
+        Eigen::Quaterniond q_body2world = myfilter.getAttitude().inverse();
+        SubtractEarthRotation(gyro, q_body2world, location.latitude);
+        imusamples.gyro = gyro;
+      }
 
-    /** Output information **/
-    this->outputPortSamples(kvh_driver, myfilter, imusamples);
+      /** Predict **/
+      myfilter.predict(gyro, delta_t);
 
-    _calibrated_sensors.write(imu);
+      /** Update/Correction **/
+      //myfilter.update(acc, true, incl, config.use_inclinometers);
+
+      /** Delta quaternion of this step **/
+      //deltaquat = attitude.inverse() * myfilter.getAttitude();
+
+      /** Delta quaternion of this step **/
+      //deltahead = deltaHeading(gyro, oldomega, delta_t);
+
+    }
+  }
+
+  //    stim300_driver->printInfo();
+
+  /** Output information **/
+  this->outputPortSamples(kvh_driver, myfilter, imusamples);
+
+  _calibrated_sensors.write(imu);
 }
 
 void Task::errorHook()
