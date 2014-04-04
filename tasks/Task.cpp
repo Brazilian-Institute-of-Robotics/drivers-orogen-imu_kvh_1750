@@ -5,8 +5,6 @@
 #include <base/samples/IMUSensors.hpp>
 #include <base/logging.h>
 
-#define DEBUG_PRINTS
-
 #ifndef D2R
 #define D2R M_PI/180.00 /** Convert degree to radian **/
 #endif
@@ -137,8 +135,9 @@ bool Task::configureHook()
 
     /** Theoretical Gravity **/
     double gravity = GRAVITY;
-    if (location.latitude > 0 && location.latitude < 90)
+    if (location.latitude > 0 && location.latitude < 90){
         gravity = GravityModel (location.latitude, location.altitude);
+    }
 
     /** Initialize the filter, including the adaptive part **/
     //TODO adapt to using only acc, gyr
@@ -217,6 +216,8 @@ void Task::updateHook()
     base::Time diffTime = ts - prev_ts;
 
     imusamples.time = ts;
+    _raw_sensors.write(imusamples);
+
     prev_ts = ts;
 #ifdef DEBUG_PRINTS
 //    std::cout<<"Delta time[s]: "<<diffTime.toSeconds()<<"\n";
@@ -278,6 +279,7 @@ void Task::updateHook()
       {
         double delta_t = diffTime.toSeconds();
         Eigen::Vector3d acc, gyro, incl;
+        //TODO inclinometer reading set to imusamples.mag???
         acc = imusamples.acc; gyro = imusamples.gyro; incl = imusamples.mag;
 
         /** Eliminate Earth rotation **/
@@ -292,13 +294,13 @@ void Task::updateHook()
         myfilter.predict(gyro, delta_t);
 
         /** Update/Correction **/
-        //myfilter.update(acc, true, incl, config.use_inclinometers);
+        myfilter.update(acc, true, incl, config.use_inclinometers);
 
         /** Delta quaternion of this step **/
-        //deltaquat = attitude.inverse() * myfilter.getAttitude();
+        deltaquat = attitude.inverse() * myfilter.getAttitude();
 
         /** Delta quaternion of this step **/
-        //deltahead = deltaHeading(gyro, oldomega, delta_t);
+        deltahead = deltaHeading(gyro, oldomega, delta_t);
 
       }
     }

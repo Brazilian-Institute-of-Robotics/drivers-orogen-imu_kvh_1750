@@ -12,10 +12,9 @@ task_context "Task" do
 
   property "device", "string" ,"/dev/ttyUSB0"
 
-#TODO timeout
-    property('timeout', 'int', 8).
+  property('timeout', 'int', 8).
         doc 'the expected time (in milliseconds) to have a whole package in the fd'+
-	'by default 8 millisecond (0.008 seconds) which corresponds to 125Hz.'
+	'by default 2 millisecond (0.002 seconds) which corresponds to 500Hz.'
 
   property('use_filter', 'bool', true).
       doc 'set to true to active the attitude estimation filter, set false otherwise.'+
@@ -53,6 +52,9 @@ task_context "Task" do
   #******************************
   #******* Output Ports *********
   #******************************
+  output_port('raw_sensors', 'base/samples/IMUSensors').
+      doc 'provides timestamped raw IMUReading samples.'
+
   output_port('calibrated_sensors', '/base/samples/IMUSensors').
       doc 'provides timestamped IMUReading samples containing the calibrated or compensated sensor readings depending on the mode'+
       'Calibrated values are temperature corrected as the device reports the values (linear acceleration and angular velocity).'+
