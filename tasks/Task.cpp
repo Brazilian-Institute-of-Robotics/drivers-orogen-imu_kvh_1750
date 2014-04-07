@@ -293,8 +293,8 @@ void Task::updateHook()
         /** Predict **/
         myfilter.predict(gyro, delta_t);
 
-        /** Update/Correction **/
-        myfilter.update(acc, true, incl, config.use_inclinometers);
+        /** Update/Correction using only acc **/
+        myfilter.update(acc, true);
 
         /** Delta quaternion of this step **/
         deltaquat = attitude.inverse() * myfilter.getAttitude();
