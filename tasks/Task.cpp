@@ -135,8 +135,9 @@ bool Task::configureHook()
 
     /** Theoretical Gravity **/
     double gravity = GRAVITY;
-    if (location.latitude > 0 && location.latitude < 90){
+    if (location.latitude > 0.0 && location.latitude < 90.0){
         gravity = GravityModel (location.latitude, location.altitude);
+        std::cout<< "GravityModel gives" << gravity << " instead of standard gravity " << GRAVITY << std::endl;
     }
 
     /** Initialize the filter, including the adaptive part **/
@@ -160,6 +161,7 @@ bool Task::configureHook()
     orientationOut.invalidate();
     orientationOut.sourceFrame = config.source_frame_name;
     orientationOut.targetFrame = config.target_frame_name;
+    orientationOut.orientation.setIdentity();
 
     #ifdef DEBUG_PRINTS
     std::cout<< "Rg\n"<<Rg<<"\n";
@@ -205,7 +207,7 @@ void Task::updateHook()
   if(act->isUpdated(fd)){
     kvh_driver->read();
     imusamples = kvh_driver->getIMUReading();
-
+    imusamples.acc = imusamples.acc * GRAVITY_SI; //g to m/s^2, KVH puts out acceleration in g
 
     /** Time is current time minus the latency **/
     //base::Time recvts = base::Time::now() - base::Time::fromMicroseconds(stim300_driver->getPacketLatency());
@@ -220,7 +222,7 @@ void Task::updateHook()
 
     prev_ts = ts;
 #ifdef DEBUG_PRINTS
-//    std::cout<<"Delta time[s]: "<<diffTime.toSeconds()<<"\n";
+    std::cout<<"Delta time[s]: "<<diffTime.toSeconds()<<"\n";
 #endif
 
     if (_use_filter.value())
@@ -251,7 +253,7 @@ void Task::updateHook()
           {
             euler[0] = (double) asin((double)meansamples[1]/ (double)meansamples.norm()); // Roll
             euler[1] = (double) -atan(meansamples[0]/meansamples[2]); //Pitch
-            euler[2] = M_PI;//Yaw (Work around for STIM3000 in Asguard)
+            euler[2] = 334 * D2R; //
 
             /** Set the initial attitude  **/
             attitude = Eigen::Quaternion <double> (Eigen::AngleAxisd(euler[2], Eigen::Vector3d::UnitZ())*
@@ -259,6 +261,7 @@ void Task::updateHook()
                 Eigen::AngleAxisd(euler[0], Eigen::Vector3d::UnitX()));
 
             if (config.use_samples_as_theoretical_gravity)
+              std::cout<< "Using sampled gravity of " << meansamples.norm() << std::endl;
               myfilter.setGravity(meansamples.norm());
           }
           else
@@ -280,9 +283,12 @@ void Task::updateHook()
         double delta_t = diffTime.toSeconds();
         Eigen::Vector3d acc, gyro, incl;
         //TODO inclinometer reading set to imusamples.mag???
-        acc = imusamples.acc; gyro = imusamples.gyro; incl = imusamples.mag;
+        //acc = imusamples.acc; gyro = imusamples.gyro; incl = imusamples.mag;
+        acc = imusamples.acc; 
+        gyro = imusamples.gyro; 
 
         /** Eliminate Earth rotation **/
+        //TODO Why depending on number of leveling samples?
         if (config.init_leveling_samples > 0)
         {
           Eigen::Quaterniond q_body2world = myfilter.getAttitude().inverse();
@@ -294,7 +300,7 @@ void Task::updateHook()
         myfilter.predict(gyro, delta_t);
 
         /** Update/Correction using only acc **/
-        myfilter.update(acc, true);
+        //myfilter.update(acc, true);
 
         /** Delta quaternion of this step **/
         deltaquat = attitude.inverse() * myfilter.getAttitude();
@@ -310,6 +316,7 @@ void Task::updateHook()
     this->outputPortSamples(kvh_driver, myfilter, imusamples);
 
     _calibrated_sensors.write(imusamples);
+    _timestamp_estimator_status.write(timestamp_estimator->getStatus());
   }
 }
 
@@ -377,8 +384,8 @@ void Task::outputPortSamples(imu_kvh_1750::Driver *driver, filter::Ikf<double, t
                 Eigen::AngleAxisd(scaleangle[0], Eigen::Vector3d::UnitX()));
 
         orientationOut.time = imusamples.time;
-        orientationOut.orientation = myfilter.getAttitude();
-       // orientationOut.orientation = attitude;
+        //orientationOut.orientation = myfilter.getAttitude();
+        orientationOut.orientation = attitude;
         orientationOut.cov_orientation = Pk.block<3,3>(0,0);
         _orientation_samples_out.write(orientationOut);
 

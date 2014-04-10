@@ -7,6 +7,9 @@
 
 namespace imu_kvh_1750 {
 
+    /** Magnetic declination mode **/
+    enum MAGNETIC_DECLINATION_MODE{EAST, WEST};
+
     /** Filter Configuration **/
     struct FilterConfiguration
     {
@@ -71,8 +74,8 @@ namespace imu_kvh_1750 {
         double longitude;//Longitude in radians
         double altitude;//Altitude in meters
         double magnetic_declination;//Declination in radians
-        int magnetic_declination_mode;//The declination is positive when the magnetic north is east of true north
-                                    //1 is EAST, which means positive declination. 2 is WEST, which means negative declination.
+        imu_kvh_1750::MAGNETIC_DECLINATION_MODE magnetic_declination_mode;//The declination is positive when the magnetic north is east of true north
+                                    //EAST means positive declination. WEST means negative declination.
         double dip_angle;//Dip angle in radians
     };
 

@@ -15,7 +15,8 @@ namespace imu_kvh_1750 {
   static const int Re = 6378137; /** Equatorial radius in meters **/
   static const int Rp = 6378137; /** Polar radius in meters **/
   static const double ECC = 0.0818191908426; /** First eccentricity **/
-  static const double GRAVITY = 9.79766542; /** Mean value of gravity value in m/s^2 **/
+  static const double GRAVITY = 9.79766542; /** Mean value of gravity value in m/s^2 according to WGS-84 **/
+  static const double GRAVITY_SI = 9.80665; /** Mean value of gravity value in m/s^2 according to SI standard **/
   static const double GWGS0 = 9.7803267714; /** Gravity value at the equator in m/s^2 **/
   static const double GWGS1 = 0.00193185138639; /** Gravity formula constant **/
   static const double EARTHW = 7.292115e-05; /** Earth angular velocity in rad/s **/

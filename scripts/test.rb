@@ -20,8 +20,9 @@ Orocos.run 'imu_kvh_1750::Task' => 'imu' do
 
 #    imu.device = ARGV[0]
     imu.device = "serial:///dev/ttyUSB0:921600"
-    imu.timeout = 8 
+    imu.timeout = 20 
     imu.use_filter = true
+#    imu.use_filter = false
 
     imu.configure
     imu.start

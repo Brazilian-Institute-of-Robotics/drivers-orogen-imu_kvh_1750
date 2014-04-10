@@ -3,7 +3,7 @@
 filter_configuration:
   source_frame_name: 'world'
   target_frame_name: 'imu'
-  use_samples_as_theoretical_gravity: true
+  use_samples_as_theoretical_gravity: true 
   use_inclinometers: false
   use_magnetometers: false
   init_leveling_samples: 500
@@ -15,7 +15,7 @@ location:
   longitude: 0.154608945
   altitude: 12.0
   magnetic_declination: 0.03098929 
-  magnetic_declination_mode: 1
+  magnetic_declination_mode: :EAST 
   dip_angle: 1.187778974
 
 
@@ -28,7 +28,7 @@ adaptive_config_acc:
 
 # Inertial Sensors property.
 inertial_noise:
-  bandwidth: 440.0 #Hz for gyro, acc has 200.0 Hz
+  bandwidth: 1000.0 #440.0 #Hz for gyro, acc has 200.0 Hz
   gbiasoff:
     data:
     - 0.0 
@@ -36,9 +36,9 @@ inertial_noise:
     - 0.0 
   gyrorw:
     data:
-    - 3.7e-06 
-    - 3.7e-06 
-    - 3.7e-06 
+    - 3.78e-06 #rad/s/sqrt(Hz)
+    - 3.78e-06
+    - 3.78e-06
   gyrorrw:
     data:
     - 0.0
@@ -46,7 +46,7 @@ inertial_noise:
     - 0.0
   gbiasins:
     data:
-    - 2.42e-07
+    - 2.42e-07 #9.6e-06 #value computed by javier
     - 2.42e-07
     - 2.42e-07
   abiasoff:
@@ -56,7 +56,7 @@ inertial_noise:
     - 0.0 #0.0055
   accrw:
     data:
-    - 3.302e-04
+    - 3.302e-04 #javier: 1.32e-03
     - 3.302e-04
     - 3.302e-04
   accrrw:
@@ -71,6 +71,6 @@ inertial_noise:
     - 4.905e-04 
   accresolut:
     data:
-    - 2.993774e-03
-    - 2.993774e-03
-    - 2.993774e-03
+    - 5.886e-03
+    - 5.886e-03
+    - 5.886e-03
