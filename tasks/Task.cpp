@@ -17,7 +17,8 @@ using namespace imu_kvh_1750;
 Task::Task(std::string const& name)
     : TaskBase(name), 
       timestamp_estimator(NULL),
-      fd(0) 
+      fd(0),
+      acc_update_ratio(0)
 {
 }
 
@@ -83,12 +84,12 @@ bool Task::configureHook()
     /** Noise configuration **/
     /*************************/
     sqrtdelta_t = sqrt(1.0/inertialnoise.bandwidth);
-    //sqrtdelta_t = sqrt(_inertial_samples_period.value());
+    double sqrtdelta_t_acc = 1.0;
 
     Ra = Eigen::Matrix3d::Zero();
-    Ra(0,0) = inertialnoise.accresolut[0] + pow(inertialnoise.accrw[0]/sqrtdelta_t,2);
-    Ra(1,1) = inertialnoise.accresolut[1] + pow(inertialnoise.accrw[1]/sqrtdelta_t,2);
-    Ra(2,2) = inertialnoise.accresolut[2] + pow(inertialnoise.accrw[2]/sqrtdelta_t,2);
+    Ra(0,0) = inertialnoise.accresolut[0] + pow(inertialnoise.accrw[0]/sqrtdelta_t_acc,2);
+    Ra(1,1) = inertialnoise.accresolut[1] + pow(inertialnoise.accrw[1]/sqrtdelta_t_acc,2);
+    Ra(2,2) = inertialnoise.accresolut[2] + pow(inertialnoise.accrw[2]/sqrtdelta_t_acc,2);
 
     Rg = Eigen::Matrix3d::Zero();
     Rg(0,0) = pow(inertialnoise.gyrorw[0]/sqrtdelta_t,2);
@@ -146,6 +147,13 @@ bool Task::configureHook()
             adaptiveconfigAcc.M1, adaptiveconfigAcc.M2, adaptiveconfigAcc.gamma,
             adaptiveconfigInc.M1, adaptiveconfigInc.M2, adaptiveconfigInc.gamma);
 
+    //TODO check if inital bias settings help
+    //const Eigen::Matrix<double,3,1> gbias(0,0,1.7e-04);
+    //const Eigen::Matrix<double,3,1> abias(0,0,0);
+    const Eigen::Matrix<double,3,1> ibias(0,0,0);
+    //myfilter.setInitBias(gbias, abias, ibias);
+    myfilter.setInitBias(inertialnoise.gbiasoff, inertialnoise.abiasoff, ibias);
+
     /** Leveling configuration **/
     init_leveling_samples.resize(3, config.init_leveling_samples);
 
@@ -179,6 +187,7 @@ bool Task::configureHook()
 
 bool Task::startHook()
 {
+  acc_cumul.setZero();
     if (! TaskBase::startHook())
         return false;
 
@@ -253,7 +262,7 @@ void Task::updateHook()
           {
             euler[0] = (double) asin((double)meansamples[1]/ (double)meansamples.norm()); // Roll
             euler[1] = (double) -atan(meansamples[0]/meansamples[2]); //Pitch
-            euler[2] = 334 * D2R; //
+            euler[2] = _initial_heading;
 
             /** Set the initial attitude  **/
             attitude = Eigen::Quaternion <double> (Eigen::AngleAxisd(euler[2], Eigen::Vector3d::UnitZ())*
@@ -299,8 +308,18 @@ void Task::updateHook()
         /** Predict **/
         myfilter.predict(gyro, delta_t);
 
-        /** Update/Correction using only acc **/
-        //myfilter.update(acc, true);
+        /** Update/Correction using only acc, every 1000th update cycle **/
+        if(acc_update_ratio < 1000 ){
+          acc_cumul += acc; 
+          ++acc_update_ratio;
+        }
+        else {
+          acc = acc_cumul / 1000.0;
+          //std::cout << "Filter update using mean of last 1000 acc samples: " << acc << std::endl;
+          myfilter.update(acc, true);
+          acc_update_ratio = 0;
+          acc_cumul.setZero();
+        }
 
         /** Delta quaternion of this step **/
         deltaquat = attitude.inverse() * myfilter.getAttitude();
@@ -315,7 +334,6 @@ void Task::updateHook()
     /** Output information **/
     this->outputPortSamples(kvh_driver, myfilter, imusamples);
 
-    _calibrated_sensors.write(imusamples);
     _timestamp_estimator_status.write(timestamp_estimator->getStatus());
   }
 }
@@ -384,14 +402,17 @@ void Task::outputPortSamples(imu_kvh_1750::Driver *driver, filter::Ikf<double, t
                 Eigen::AngleAxisd(scaleangle[0], Eigen::Vector3d::UnitX()));
 
         orientationOut.time = imusamples.time;
-        //orientationOut.orientation = myfilter.getAttitude();
-        orientationOut.orientation = attitude;
+        //TODO take filter attitude or attitude computed above
+        orientationOut.orientation = myfilter.getAttitude();
+        //orientationOut.orientation = attitude;
         orientationOut.cov_orientation = Pk.block<3,3>(0,0);
         _orientation_samples_out.write(orientationOut);
 
         compensatedSamples = imusamples;
         compensatedSamples.gyro = imusamples.gyro - myfilter.getGyroBias();//gyros minus bias
         compensatedSamples.acc = imusamples.acc - myfilter.getAccBias() - myfilter.getGravityinBody(); //acc minus bias and gravity
+        //TODO compensated samples also compensating gravity?
+        //compensatedSamples.acc = imusamples.acc - myfilter.getAccBias();  //acc minus bias 
         _calibrated_sensors.write(compensatedSamples);
 
         #ifdef DEBUG_PRINTS

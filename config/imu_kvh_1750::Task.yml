@@ -22,9 +22,9 @@ location:
 --- name:imu_kvh_1750
 # Adaptive estimation of external acceleration.
 adaptive_config_acc:
-  M1: 5
-  M2: 500
-  gamma: 0.0062
+  M1: 10 
+  M2: 2 
+  gamma: 0.003
 
 # Inertial Sensors property.
 inertial_noise:
@@ -33,7 +33,7 @@ inertial_noise:
     data:
     - 0.0 
     - 0.0 
-    - 0.0 
+    - 1.8e-06 
   gyrorw:
     data:
     - 3.78e-06 #rad/s/sqrt(Hz)

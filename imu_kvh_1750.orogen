@@ -48,6 +48,8 @@ task_context "Task" do
   property('location',"imu_kvh_1750/LocationConfiguration").
       doc 'Localization properties related to the geographic place (i.e.: latitude, longitude, magnetic declination).'
 
+  property('initial_heading', 'double').
+    doc 'Initial heading sensor in radians'
 
   #******************************
   #******* Output Ports *********

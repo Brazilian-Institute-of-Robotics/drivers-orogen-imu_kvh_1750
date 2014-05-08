@@ -44,6 +44,10 @@ namespace imu_kvh_1750 {
         /** Index for initializing attitude **/
         unsigned int init_leveling_idx;
 
+        /** Counter for acc/gyro update ratio **/
+        unsigned int acc_update_ratio;
+        Eigen::Vector3d acc_cumul;
+
         /**************************/
         /*** Property Variables ***/
         /**************************/

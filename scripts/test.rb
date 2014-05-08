@@ -23,6 +23,7 @@ Orocos.run 'imu_kvh_1750::Task' => 'imu' do
     imu.timeout = 20 
     imu.use_filter = true
 #    imu.use_filter = false
+    imu.initial_heading = 0.143
 
     imu.configure
     imu.start
