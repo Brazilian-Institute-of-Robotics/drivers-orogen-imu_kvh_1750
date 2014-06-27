@@ -20,6 +20,11 @@ task_context "Task" do
       doc 'set to true to active the attitude estimation filter, set false otherwise.'+
       'In true mode inertial sensors output port will be compensated and calibrated values'+
       'In false mode inertial sensors output will be only calibrated values'
+      
+  property('initial_north_seeking', 'bool', false).
+      doc 'Do initial north seeking.'
+  property('north_seeking_period', 'double', 90.0).
+      doc 'Time in seconds to sample while north seeking.'
 
   #****************************
   #**** Filter Properties *****
@@ -67,6 +72,11 @@ task_context "Task" do
 
   output_port('timestamp_estimator_status', 'aggregator::TimestampEstimatorStatus').
       doc("Debug output of the TimestampEstimator")
+      
+  #******************************
+  #********** States ************
+  #******************************
+  runtime_states :INITIAL_NORTH_SEEKING
 
   fd_driven
 end

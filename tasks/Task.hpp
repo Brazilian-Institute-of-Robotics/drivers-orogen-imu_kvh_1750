@@ -47,6 +47,10 @@ namespace imu_kvh_1750 {
         /** Counter for acc/gyro update ratio **/
         unsigned int acc_update_ratio;
         Eigen::Vector3d acc_cumul;
+	
+	/** Initial north seeking **/
+	bool do_north_seeking;
+	base::Time start_seeking;
 
         /**************************/
         /*** Property Variables ***/
@@ -64,6 +68,9 @@ namespace imu_kvh_1750 {
 
         /** Location configuration variables **/
         LocationConfiguration location;
+	
+	/** Initial heading **/
+	base::Angle initial_heading;
 
         /**************************/
         /*** Internal Variables ***/
@@ -85,6 +92,12 @@ namespace imu_kvh_1750 {
         Eigen::Quaterniond deltaquat, deltahead, attitude;
 
         Eigen::Matrix4d oldomega;
+	
+	Eigen::Vector3d acc_gyro;
+	
+	/** Task states **/
+	States last_state;
+        States new_state;
 
         /***************************/
         /** Output port variables **/

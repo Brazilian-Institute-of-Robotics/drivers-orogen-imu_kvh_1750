@@ -164,6 +164,16 @@ bool Task::configureHook()
     oldomega.setZero();
 
     initAttitude = false;
+    
+    /** North seeking **/
+    do_north_seeking = _initial_north_seeking.get();
+    start_seeking = base::Time::now();
+    acc_gyro.setZero();
+    initial_heading = base::Angle::fromRad(_initial_heading.get());
+    
+    /** Task states **/
+    last_state = PRE_OPERATIONAL;
+    new_state = RUNNING;
 
     /** Output variable **/
     orientationOut.invalidate();
@@ -207,6 +217,7 @@ bool Task::startHook()
 void Task::updateHook()
 {
   //std::cout << "UpdateHook called" << std::endl;
+  new_state = RUNNING;
   base::samples::IMUSensors imusamples;
   TaskBase::updateHook();
 
@@ -234,7 +245,21 @@ void Task::updateHook()
     std::cout<<"Delta time[s]: "<<diffTime.toSeconds()<<"\n";
 #endif
 
-    if (_use_filter.value())
+    if(do_north_seeking)
+    {
+      new_state = INITIAL_NORTH_SEEKING;
+      acc_gyro.x() += imusamples.gyro[0];
+      acc_gyro.y() += imusamples.gyro[1];
+      acc_gyro.z() += imusamples.gyro[2];
+      
+      if((base::Time::now() - start_seeking).toSeconds() >= _north_seeking_period.get())
+      {
+	  initial_heading = base::Angle::fromRad(- atan2(acc_gyro.y(), acc_gyro.x()));
+	  acc_gyro.setZero();
+	  do_north_seeking = false;
+      }
+    }
+    else if (_use_filter.value())
     {
       /** Attitude filter **/
       if (!initAttitude)
@@ -262,7 +287,7 @@ void Task::updateHook()
           {
             euler[0] = (double) asin((double)meansamples[1]/ (double)meansamples.norm()); // Roll
             euler[1] = (double) -atan(meansamples[0]/meansamples[2]); //Pitch
-            euler[2] = _initial_heading;
+            euler[2] = initial_heading.getRad();
 
             /** Set the initial attitude  **/
             attitude = Eigen::Quaternion <double> (Eigen::AngleAxisd(euler[2], Eigen::Vector3d::UnitZ())*
@@ -332,7 +357,15 @@ void Task::updateHook()
 
 
     /** Output information **/
-    this->outputPortSamples(kvh_driver, myfilter, imusamples);
+    if(!do_north_seeking)
+	this->outputPortSamples(kvh_driver, myfilter, imusamples);
+    
+    /** Write tast state if it has changed **/
+    if(last_state != new_state)
+    {
+        last_state = new_state;
+        state(new_state);
+    }
 
     _timestamp_estimator_status.write(timestamp_estimator->getStatus());
   }
