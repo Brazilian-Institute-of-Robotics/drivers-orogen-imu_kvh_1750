@@ -95,6 +95,8 @@ namespace imu_kvh_1750 {
 	
 	Eigen::Vector3d acc_gyro;
 	
+	Eigen::Matrix3d gyro_measurement_noise;
+	
 	/** Task states **/
 	States last_state;
         States new_state;

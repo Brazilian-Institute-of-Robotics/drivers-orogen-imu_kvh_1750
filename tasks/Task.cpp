@@ -95,6 +95,7 @@ bool Task::configureHook()
     Rg(0,0) = pow(inertialnoise.gyrorw[0]/sqrtdelta_t,2);
     Rg(1,1) = pow(inertialnoise.gyrorw[1]/sqrtdelta_t,2);
     Rg(2,2) = pow(inertialnoise.gyrorw[2]/sqrtdelta_t,2);
+    gyro_measurement_noise = Rg;
 
     Rm = Eigen::Matrix3d::Zero();
     Rm(0,0) = pow(inertialnoise.magrw[0]/sqrtdelta_t,2);
@@ -433,20 +434,27 @@ void Task::outputPortSamples(imu_kvh_1750::Driver *driver, filter::Ikf<double, t
         attitude = attitude * Eigen::Quaternion <double> (Eigen::AngleAxisd(scaleangle[2], Eigen::Vector3d::UnitZ())*
                 Eigen::AngleAxisd(scaleangle[1], Eigen::Vector3d::UnitY()) *
                 Eigen::AngleAxisd(scaleangle[0], Eigen::Vector3d::UnitX()));
+	
+	compensatedSamples = imusamples;
+        compensatedSamples.gyro = imusamples.gyro - myfilter.getGyroBias();//gyros minus bias
+        compensatedSamples.acc = imusamples.acc - myfilter.getAccBias() - myfilter.getGravityinBody(); //acc minus bias and gravity
+        //TODO compensated samples also compensating gravity?
+        //compensatedSamples.acc = imusamples.acc - myfilter.getAccBias();  //acc minus bias 
+        _calibrated_sensors.write(compensatedSamples);
 
         orientationOut.time = imusamples.time;
         //TODO take filter attitude or attitude computed above
         orientationOut.orientation = myfilter.getAttitude();
         //orientationOut.orientation = attitude;
         orientationOut.cov_orientation = Pk.block<3,3>(0,0);
+	Eigen::AngleAxisd angular_velocity_angle_axis = 
+			    Eigen::AngleAxisd(Eigen::AngleAxisd(compensatedSamples.gyro[2], Eigen::Vector3d::UnitZ()) * 
+					    Eigen::AngleAxisd(compensatedSamples.gyro[1], Eigen::Vector3d::UnitY()) * 
+					    Eigen::AngleAxisd(compensatedSamples.gyro[0], Eigen::Vector3d::UnitX()));
+	orientationOut.angular_velocity = angular_velocity_angle_axis.angle() * angular_velocity_angle_axis.axis();
+	orientationOut.cov_angular_velocity = gyro_measurement_noise;
+	
         _orientation_samples_out.write(orientationOut);
-
-        compensatedSamples = imusamples;
-        compensatedSamples.gyro = imusamples.gyro - myfilter.getGyroBias();//gyros minus bias
-        compensatedSamples.acc = imusamples.acc - myfilter.getAccBias() - myfilter.getGravityinBody(); //acc minus bias and gravity
-        //TODO compensated samples also compensating gravity?
-        //compensatedSamples.acc = imusamples.acc - myfilter.getAccBias();  //acc minus bias 
-        _calibrated_sensors.write(compensatedSamples);
 
         #ifdef DEBUG_PRINTS
         Eigen::Vector3d euler;
