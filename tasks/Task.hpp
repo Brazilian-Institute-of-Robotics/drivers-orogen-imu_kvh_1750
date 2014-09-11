@@ -71,6 +71,9 @@ namespace imu_kvh_1750 {
 	
 	/** Initial heading **/
 	base::Angle initial_heading;
+	
+	/** Estimated LAT **/
+	base::Angle estimated_lat;
 
         /**************************/
         /*** Internal Variables ***/
@@ -81,8 +84,8 @@ namespace imu_kvh_1750 {
         /** Driver variables **/
         int timeout_counter;
         imu_kvh_1750::Driver *kvh_driver;
-        int fd;
         aggregator::TimestampEstimator* timestamp_estimator;
+        int fd;
 
         /** Initial values of Accelerometers/Inclinometers for Pitch and Roll calculation */
         Eigen::Matrix <double, 3, Eigen::Dynamic> init_leveling_samples;
@@ -93,7 +96,8 @@ namespace imu_kvh_1750 {
 
         Eigen::Matrix4d oldomega;
 	
-	Eigen::Vector3d acc_gyro;
+	Eigen::Vector3d accu_gyro;
+	Eigen::Vector3d accu_acc;
 	
 	Eigen::Matrix3d gyro_measurement_noise;
 	

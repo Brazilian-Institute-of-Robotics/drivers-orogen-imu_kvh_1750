@@ -4,6 +4,7 @@
 #include <imu_kvh_1750/Driver.hpp>
 #include <base/samples/IMUSensors.hpp>
 #include <base/logging.h>
+#include <Eigen/Geometry>
 
 #ifndef D2R
 #define D2R M_PI/180.00 /** Convert degree to radian **/
@@ -16,9 +17,9 @@ using namespace imu_kvh_1750;
 
 Task::Task(std::string const& name)
     : TaskBase(name), 
+      acc_update_ratio(0),
       timestamp_estimator(NULL),
-      fd(0),
-      acc_update_ratio(0)
+      fd(0)
 {
 }
 
@@ -169,7 +170,8 @@ bool Task::configureHook()
     /** North seeking **/
     do_north_seeking = _initial_north_seeking.get();
     start_seeking = base::Time::now();
-    acc_gyro.setZero();
+    accu_gyro.setZero();
+    accu_acc.setZero();
     initial_heading = base::Angle::fromRad(_initial_heading.get());
     
     /** Task states **/
@@ -249,15 +251,34 @@ void Task::updateHook()
     if(do_north_seeking)
     {
       new_state = INITIAL_NORTH_SEEKING;
-      acc_gyro.x() += imusamples.gyro[0];
-      acc_gyro.y() += imusamples.gyro[1];
-      acc_gyro.z() += imusamples.gyro[2];
+
+      //TODO only accumulate acc values if standing still (vector norm ~ earth gravity vector)
+      accu_acc.x() += imusamples.acc[0];
+      accu_acc.y() += imusamples.acc[1];
+      accu_acc.z() += imusamples.acc[2];
+      accu_gyro.x() += imusamples.gyro[0];
+      accu_gyro.y() += imusamples.gyro[1];
+      accu_gyro.z() += imusamples.gyro[2];
       
       if((base::Time::now() - start_seeking).toSeconds() >= _north_seeking_period.get())
       {
-	  initial_heading = base::Angle::fromRad(- atan2(acc_gyro.y(), acc_gyro.x()));
-	  acc_gyro.setZero();
-	  do_north_seeking = false;
+	// get rotation from acc values
+	printf("Accu_acc: %.2f | %.2f | %.2f, accu_gyr: %.2f | %.2f | %.2f\n",accu_acc[0], accu_acc[1], accu_acc[2], accu_gyro[0], accu_gyro[1], accu_gyro[2]); 
+        Eigen::Quaterniond rot_imu2world = Eigen::Quaterniond::FromTwoVectors(accu_acc,Eigen::Vector3d::UnitZ());	
+	// compensate for rotation
+	base::Vector3d gyr_corr = rot_imu2world * accu_gyro;
+	base::Vector3d acc_corr = rot_imu2world * accu_acc;
+	printf("Compensated accu_acc: %.2f | %.2f | %.2f\n",acc_corr[0], acc_corr[1], acc_corr[2]);
+	printf("Compensated accu_gyro: %.2f | %.2f | %.2f\n",gyr_corr[0], gyr_corr[1], gyr_corr[2]);
+	//estimate initial heading to true north
+	initial_heading = base::Angle::fromRad(- atan2(gyr_corr.y(), gyr_corr.x()));
+	printf("Initial heading: %f\n",initial_heading.getDeg());
+	//TODO get latitude 1) get normal vector n on xy (cross(x,y), and compute angle between measured vector v and n (cos a = dot(n,v). sin b  is cos a -> asin(dot(v,n)
+	estimated_lat = base::Angle::fromRad(asin(gyr_corr.normalized().dot(Eigen::Vector3d::UnitZ())));
+	printf("Estimated LAT: %f\n",estimated_lat.getDeg());
+	accu_gyro.setZero();
+	accu_acc.setZero();
+	do_north_seeking = false;
       }
     }
     else if (_use_filter.value())
