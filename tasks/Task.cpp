@@ -11,7 +11,6 @@ using namespace imu_kvh_1750;
 
 Task::Task(std::string const& name)
     : TaskBase(name),
-      timestamp_estimator(NULL),
       fd(0)
 {
 }
@@ -37,28 +36,25 @@ bool Task::configureHook()
     /** Configure IMU KVH 1750 driver  **/
     /************************************/
 
-    kvh_driver = new imu_kvh_1750::Driver();
-    kvh_driver->setReadTimeout(base::Time::fromMilliseconds(_timeout.value()));
+    kvh_driver.reset(new imu_kvh_1750::Driver());
+    kvh_driver->setReadTimeout(base::Time::fromSeconds(_timeout.value()));
     kvh_driver->open(_device.value());
     fd = kvh_driver->getFileDescriptor();
     
     if(fd < 0)
     {
 	RTT::log(RTT::Error) << "Failed to open device. No valid file descriptor." << RTT::endlog();
+	return false;
     }
 
     /*************************************/
     /** Configuration of Time estimator **/
     /*************************************/
-    timestamp_estimator = new aggregator::TimestampEstimator(
+    timestamp_estimator.reset(new aggregator::TimestampEstimator(
 	base::Time::fromSeconds(20),
 	base::Time::fromSeconds(1.0 / imu_kvh_1750::DEFAULT_SAMPLING_FREQUENCY),
 	base::Time::fromSeconds(0),
-	INT_MAX);
-    
-    /** Task states **/
-    last_state = PRE_OPERATIONAL;
-    new_state = RUNNING;
+	INT_MAX));
 
     return true;
 }
@@ -73,7 +69,8 @@ bool Task::startHook()
     if (activity)
     {
         activity->watch(fd);
-	activity->setTimeout(boost::numeric_cast<int>((2.0*_timeout.value())));
+	base::Time activity_timeout = base::Time::fromSeconds(2.0*_timeout.value());
+	activity->setTimeout(boost::numeric_cast<int>(activity_timeout.toMilliseconds()));
     }
 
     return true;
@@ -82,7 +79,6 @@ bool Task::startHook()
 
 void Task::updateHook()
 {
-    new_state = RUNNING;
     TaskBase::updateHook();
 
     RTT::extras::FileDescriptorActivity* act = getActivity<RTT::extras::FileDescriptorActivity>();
@@ -106,13 +102,6 @@ void Task::updateHook()
 	_calibrated_sensors.write(imusamples);
 	
 	_device_temperature.write(base::Temperature::fromCelsius(boost::numeric_cast<double>(kvh_driver->getTemperature())));
-	
-	/** Write tast state if it has changed **/
-	if(last_state != new_state)
-	{
-	    last_state = new_state;
-	    state(new_state);
-	}
 
 	_timestamp_estimator_status.write(timestamp_estimator->getStatus());
     }
@@ -142,5 +131,7 @@ void Task::cleanupHook()
 {
     TaskBase::cleanupHook();
     kvh_driver->close();
-    delete(timestamp_estimator);
+    fd = 0;
+    timestamp_estimator.reset();
+    kvh_driver.reset();
 }

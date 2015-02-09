@@ -20,13 +20,9 @@ namespace imu_kvh_1750 {
     protected:
         /** Driver variables **/
         int timeout_counter;
-        imu_kvh_1750::Driver *kvh_driver;
-        aggregator::TimestampEstimator* timestamp_estimator;
+        boost::shared_ptr<imu_kvh_1750::Driver> kvh_driver;
+        boost::shared_ptr<aggregator::TimestampEstimator> timestamp_estimator;
         int fd;
-	
-	/** Task states **/
-	States last_state;
-        States new_state;
 
     public:
         /** TaskContext constructor for Task
