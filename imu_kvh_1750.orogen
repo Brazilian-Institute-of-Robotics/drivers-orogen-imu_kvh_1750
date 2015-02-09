@@ -17,6 +17,9 @@ task_context "Task" do
 	
     property('sampling_frequency', 'double', 100.0).
 	doc 'the sampling frequency of the device. by default 100Hz.'
+	
+    property('axes_orientation', '/base/Matrix3d').
+	doc 'Orientation of the device axes in the local device frame.'
 
 
     #******************************

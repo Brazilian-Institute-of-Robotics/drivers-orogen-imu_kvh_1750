@@ -97,6 +97,14 @@ void Task::updateHook()
 	base::samples::IMUSensors imusamples;
 	kvh_driver->read();
 	imusamples = kvh_driver->getIMUReading();
+
+	/** rotate measurments to the local frame */
+	if(!_axes_orientation.value().isZero())
+	{
+	    imusamples.acc = _axes_orientation.value() * imusamples.acc;
+	    imusamples.gyro = _axes_orientation.value() * imusamples.gyro;
+	}
+
 	/** acceleration in m/s^2 */
 	imusamples.acc = imusamples.acc * GRAVITY_SI; //g to m/s^2, KVH puts out acceleration in g
 
