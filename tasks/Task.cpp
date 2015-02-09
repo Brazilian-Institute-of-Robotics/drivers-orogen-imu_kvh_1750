@@ -50,9 +50,15 @@ bool Task::configureHook()
     /*************************************/
     /** Configuration of Time estimator **/
     /*************************************/
+    if(_sampling_frequency.value() <= 0.0)
+    {
+	RTT::log(RTT::Error) << "The sampling frequency has to be a positive non-zero value." << RTT::endlog();
+	return false;
+    }
+    
     timestamp_estimator.reset(new aggregator::TimestampEstimator(
 	base::Time::fromSeconds(20),
-	base::Time::fromSeconds(1.0 / imu_kvh_1750::DEFAULT_SAMPLING_FREQUENCY),
+	base::Time::fromSeconds(1.0 / _sampling_frequency.value()),
 	base::Time::fromSeconds(0),
 	INT_MAX));
 
