@@ -97,7 +97,11 @@ void Task::updateHook()
 	base::samples::IMUSensors imusamples;
 	kvh_driver->read();
 	imusamples = kvh_driver->getIMUReading();
+	/** acceleration in m/s^2 */
 	imusamples.acc = imusamples.acc * GRAVITY_SI; //g to m/s^2, KVH puts out acceleration in g
+
+	/** gyroscopes in rad/s, KVH puts out the integrated delta rotation */
+	imusamples.gyro = imusamples.gyro * _sampling_frequency.value();
 
 	/** Estimate the current timestamp */
 	imusamples.time = timestamp_estimator->update(imusamples.time, kvh_driver->getCounter());
