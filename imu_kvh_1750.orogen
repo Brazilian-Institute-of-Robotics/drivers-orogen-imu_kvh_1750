@@ -3,81 +3,32 @@ name "imu_kvh_1750"
 import_types_from "base"
 import_types_from "imu_kvh_1750Types.hpp"
 using_library "imu_kvh_1750"
-using_library 'quater_ikf'
 using_library 'aggregator'
 import_types_from 'aggregator'
 
 task_context "Task" do
-  needs_configuration
+    needs_configuration
 
-  property "device", "string" ,"/dev/ttyUSB0"
+    property "device", "string" ,"/dev/ttyUSB0"
 
-  property('timeout', 'double', 2.0).
-        doc 'the expected time (in milliseconds) to have a whole package in the fd'+
+    property('timeout', 'double', 2.0).
+	doc 'the expected time (in milliseconds) to have a whole package in the fd'+
 	'by default 2 millisecond (0.002 seconds) which corresponds to 500Hz.'
 
-  property('use_filter', 'bool', true).
-      doc 'set to true to active the attitude estimation filter, set false otherwise.'+
-      'In true mode inertial sensors output port will be compensated and calibrated values'+
-      'In false mode inertial sensors output will be only calibrated values'
-      
-  property('initial_north_seeking', 'bool', false).
-      doc 'Do initial north seeking.'
-  property('north_seeking_period', 'double', 90.0).
-      doc 'Time in seconds to sample while north seeking.'
 
-  #****************************
-  #**** Filter Properties *****
-  #****************************
-  property('filter_configuration', 'imu_kvh_1750/FilterConfiguration').
-      doc 'General configuration values to run the task'
+    #******************************
+    #******* Output Ports *********
+    #******************************
+    output_port('raw_sensors', '/base/samples/IMUSensors').
+	doc 'provides timestamped raw IMUReading samples.'
 
-  #*********************************************
-  #**** Inertial Measurement Unit Properties ***
-  #*********************************************
-  property('inertial_noise','imu_kvh_1750/InertialNoiseParameters').
-      doc 'Inertial Sensors property.'
+    output_port('calibrated_sensors', '/base/samples/IMUSensors').
+	doc 'provides timestamped IMUReading samples containing the calibrated or compensated sensor readings depending on the mode'+
+	'Calibrated values are temperature corrected as the device reports the values (linear acceleration and angular velocity).'
 
-  #****************************
-  #**** Adaptive Properties ***
-  #****************************
-  property('adaptive_config_acc', 'imu_kvh_1750/AdaptiveAttitudeConfig').
-      doc 'Adaptive estimation of external acceleration.'
+    output_port('timestamp_estimator_status', 'aggregator::TimestampEstimatorStatus').
+	doc("Debug output of the TimestampEstimator")
 
-    property('adaptive_config_inc', 'imu_kvh_1750/AdaptiveAttitudeConfig').
-        doc 'Adaptive estimation of external inclinometers.'
-
-  #******************************
-  #**** Location Properties *****
-  #******************************
-  property('location',"imu_kvh_1750/LocationConfiguration").
-      doc 'Localization properties related to the geographic place (i.e.: latitude, longitude, magnetic declination).'
-
-  property('initial_heading', 'double', 0.0).
-    doc 'Initial heading sensor in radians'
-
-  #******************************
-  #******* Output Ports *********
-  #******************************
-  output_port('raw_sensors', 'base/samples/IMUSensors').
-      doc 'provides timestamped raw IMUReading samples.'
-
-  output_port('calibrated_sensors', '/base/samples/IMUSensors').
-      doc 'provides timestamped IMUReading samples containing the calibrated or compensated sensor readings depending on the mode'+
-      'Calibrated values are temperature corrected as the device reports the values (linear acceleration and angular velocity).'+
-      'Compensated values are Earth gravity/rotation and bias compensated angular velocity and linear acceleration from the filter.'
-
-  output_port('orientation_samples_out', '/base/samples/RigidBodyState').
-      doc 'provides timestamped IMU orientation samples containing the quaternion.'
-
-  output_port('timestamp_estimator_status', 'aggregator::TimestampEstimatorStatus').
-      doc("Debug output of the TimestampEstimator")
-      
-  #******************************
-  #********** States ************
-  #******************************
-  runtime_states :INITIAL_NORTH_SEEKING
-
-  fd_driven
+    fd_driven
 end
 
