@@ -105,6 +105,8 @@ void Task::updateHook()
 
 	_calibrated_sensors.write(imusamples);
 	
+	_device_temperature.write(base::Temperature::fromCelsius(boost::numeric_cast<double>(kvh_driver->getTemperature())));
+	
 	/** Write tast state if it has changed **/
 	if(last_state != new_state)
 	{
