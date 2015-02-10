@@ -1,76 +1,19 @@
 --- name:default
-# General configuration values to run the task
-filter_configuration:
-  source_frame_name: 'world'
-  target_frame_name: 'imu'
-  use_samples_as_theoretical_gravity: true 
-  use_inclinometers: false
-  use_magnetometers: false
-  init_leveling_samples: 500
-
---- name:Bremen
-# Localization properties related to the geographic place (i.e.: latitude, longitude, magnetic declination).
-location:
-  latitude: 0.926978312
-  longitude: 0.154608945
-  altitude: 12.0
-  magnetic_declination: 0.03098929 
-  magnetic_declination_mode: :EAST 
-  dip_angle: 1.187778974
-
-
---- name:imu_kvh_1750
-# Adaptive estimation of external acceleration.
-adaptive_config_acc:
-  M1: 10 
-  M2: 2 
-  gamma: 0.003
-
-# Inertial Sensors property.
-inertial_noise:
-  bandwidth: 1000.0 #440.0 #Hz for gyro, acc has 200.0 Hz
-  gbiasoff:
-    data:
-    - 0.0 
-    - 0.0 
-    - 1.8e-06 
-  gyrorw:
-    data:
-    - 3.78e-06 #rad/s/sqrt(Hz)
-    - 3.78e-06
-    - 3.78e-06
-  gyrorrw:
-    data:
-    - 0.0
-    - 0.0
-    - 0.0
-  gbiasins:
-    data:
-    - 2.42e-07 #9.6e-06 #value computed by javier
-    - 2.42e-07
-    - 2.42e-07
-  abiasoff:
-    data:
-    - 0.0 #-0.0027
-    - 0.0 
-    - 0.0 #0.0055
-  accrw:
-    data:
-    - 3.302e-04 #javier: 1.32e-03
-    - 3.302e-04
-    - 3.302e-04
-  accrrw:
-    data:
-    - 0.0
-    - 0.0
-    - 0.0
-  abiasins:
-    data:
-    - 4.905e-04 
-    - 4.905e-04 
-    - 4.905e-04 
-  accresolut:
-    data:
-    - 5.886e-03
-    - 5.886e-03
-    - 5.886e-03
+# the sampling frequency of the device. by default 100Hz.
+sampling_frequency: 100.0
+# the expected time (in seconds) to have a whole package in the fdby default 10 milliseconds (0.01 seconds) which corresponds to 100Hz.
+timeout: 0.01
+# the device port
+device: serial:///dev/ttyUSB0:921600
+# Orientation of the device axes in the local device frame.
+axes_orientation:
+  data:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
