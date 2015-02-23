@@ -4,16 +4,16 @@ sampling_frequency: 100.0
 # the expected time (in seconds) to have a whole package in the fdby default 10 milliseconds (0.01 seconds) which corresponds to 100Hz.
 timeout: 0.01
 # the device port
-device: serial:///dev/ttyUSB0:921600
+device: serial:///dev/ttyS2:921600
 # Orientation of the device axes in the local device frame.
 axes_orientation:
   data:
+  - -1.0
   - 0.0
   - 0.0
   - 0.0
+  - 0.707107
+  - -0.707107
   - 0.0
-  - 0.0
-  - 0.0
-  - 0.0
-  - 0.0
-  - 0.0
+  - 0.707107
+  - 0.707107
