@@ -108,8 +108,9 @@ void Task::updateHook()
 	/** acceleration in m/s^2 */
 	imusamples.acc = imusamples.acc * GRAVITY_SI; //g to m/s^2, KVH puts out acceleration in g
 
-	/** gyroscopes in rad/s, KVH puts out the integrated delta rotation */
-	imusamples.gyro = imusamples.gyro * _sampling_frequency.value();
+    if(_gyroscope_delta_rotation.value())
+	    /** gyroscopes in rad/s, KVH puts out the integrated delta rotation */
+	    imusamples.gyro = imusamples.gyro * _sampling_frequency.value();
 
 	/** Estimate the current timestamp */
 	imusamples.time = timestamp_estimator->update(imusamples.time, kvh_driver->getCounter());
