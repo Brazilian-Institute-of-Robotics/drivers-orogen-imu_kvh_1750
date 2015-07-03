@@ -10,6 +10,5 @@
   <depend package="base/cmake" />
   <depend package="base/types" />
   <depend package="drivers/imu_kvh_1750" />
-  <depend package="slam/quater_ikf" />
   <depend package="drivers/orogen/aggregator" />
 </package>
