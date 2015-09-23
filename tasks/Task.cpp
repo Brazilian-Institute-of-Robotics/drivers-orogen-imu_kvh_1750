@@ -40,7 +40,17 @@ bool Task::configureHook()
     kvh_driver->setReadTimeout(base::Time::fromSeconds(_timeout.value()));
     kvh_driver->open(_device.value());
     fd = kvh_driver->getFileDescriptor();
-    
+
+    if(_axes_orientation_acc.value().isZero())
+    {
+        LOG_ERROR("The accelerometers' transformation matrix was not set.");
+    }
+
+    if(_axes_orientation_gyro.value().isZero())
+    {
+        LOG_ERROR("The gyroscopes' transformation matrix was not set.");
+    }
+
     if(fd < 0)
     {
 	RTT::log(RTT::Error) << "Failed to open device. No valid file descriptor." << RTT::endlog();
@@ -99,11 +109,8 @@ void Task::updateHook()
 	imusamples = kvh_driver->getIMUReading();
 
 	/** rotate measurments to the local frame */
-	if(!_axes_orientation.value().isZero())
-	{
-	    imusamples.acc = _axes_orientation.value() * imusamples.acc;
-	    imusamples.gyro = _axes_orientation.value() * imusamples.gyro;
-	}
+    imusamples.acc = _axes_orientation_acc.value() * imusamples.acc;
+    imusamples.gyro = _axes_orientation_gyro.value() * imusamples.gyro;
 
 	/** acceleration in m/s^2 */
 	imusamples.acc = imusamples.acc * GRAVITY_SI; //g to m/s^2, KVH puts out acceleration in g

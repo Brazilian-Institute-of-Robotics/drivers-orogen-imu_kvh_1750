@@ -22,8 +22,12 @@ task_context "Task" do
     property('gyroscope_delta_rotation', 'bool', false).
         doc('True if the gyroscope output of the IMU is in delta rotations.')
 
-    property('axes_orientation', '/base/Matrix3d').
-	doc 'Orientation of the device axes in the local device frame.'
+    property('axes_orientation_acc', '/base/Matrix3d').
+	doc 'Orientation of the device axes in the local device frame 
+             for the accelerometers measurements.'
+    property('axes_orientation_gyro', '/base/Matrix3d').
+	doc 'Orientation of the device axes in the local device frame
+             for the gyroscopes measurements.'
 
 
     #******************************
