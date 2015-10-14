@@ -11,7 +11,8 @@ using namespace imu_kvh_1750;
 
 Task::Task(std::string const& name)
     : TaskBase(name),
-      fd(0)
+      fd(0),
+      roll_old(0)
 {
 }
 
@@ -98,38 +99,50 @@ void Task::updateHook()
     TaskBase::updateHook();
 
     RTT::extras::FileDescriptorActivity* act = getActivity<RTT::extras::FileDescriptorActivity>();
-    if(act->hasError()) 
-	RTT::log(RTT::Warning) << "File descriptor activity has an error." << RTT::endlog();
-    if(act->hasTimeout()) 
-	RTT::log(RTT::Warning) << "File descriptor activity timeout." << RTT::endlog();
-    if(act->isUpdated(fd))
-    {
-	base::samples::IMUSensors imusamples;
-	kvh_driver->read();
-	imusamples = kvh_driver->getIMUReading();
+    if (act->hasError())
+        RTT::log(RTT::Warning) << "File descriptor activity has an error." << RTT::endlog();
+    if (act->hasTimeout())
+        RTT::log(RTT::Warning) << "File descriptor activity timeout." << RTT::endlog();
+    if (act->isUpdated(fd)) {
+        base::samples::IMUSensors imusamples;
+        kvh_driver->read();
+        imusamples = kvh_driver->getIMUReading();
 
-	/** rotate measurments to the local frame */
-    imusamples.acc = _axes_orientation_acc.value() * imusamples.acc;
-    imusamples.gyro = _axes_orientation_gyro.value() * imusamples.gyro;
+        /** rotate measurments to the local frame */
+        imusamples.acc = _axes_orientation_acc.value() * imusamples.acc;
+        imusamples.gyro = _axes_orientation_gyro.value() * imusamples.gyro;
 
-	/** acceleration in m/s^2 */
-	imusamples.acc = imusamples.acc * GRAVITY_SI; //g to m/s^2, KVH puts out acceleration in g
+        /** acceleration in m/s^2 */
+        imusamples.acc = imusamples.acc * GRAVITY_SI; //g to m/s^2, KVH puts out acceleration in g
 
-    if(_gyroscope_delta_rotation.value())
-	    /** gyroscopes in rad/s, KVH puts out the integrated delta rotation */
-	    imusamples.gyro = imusamples.gyro * _sampling_frequency.value();
+        if (_gyroscope_delta_rotation.value())
+            /** gyroscopes in rad/s, KVH puts out the integrated delta rotation */
+            imusamples.gyro = imusamples.gyro * _sampling_frequency.value();
 
-	/** Estimate the current timestamp */
-	imusamples.time = timestamp_estimator->update(imusamples.time, kvh_driver->getCounter());
+        /** Estimate the current timestamp */
+        imusamples.time = timestamp_estimator->update(imusamples.time, kvh_driver->getCounter());
 
-	/** Output information **/
-	_raw_sensors.write(imusamples);
 
-	_calibrated_sensors.write(imusamples);
-	
-	_device_temperature.write(base::Temperature::fromCelsius(boost::numeric_cast<double>(kvh_driver->getTemperature())));
+        double roll = (double) asin((double) imusamples.acc[1] / (double) imusamples.acc.norm()); // Roll
 
-	_timestamp_estimator_status.write(timestamp_estimator->getStatus());
+        if (!time_old.isNull()) {
+
+            /** Estimate the roll using accelerometer */
+            imusamples.gyro[0] = (roll - roll_old) / (imusamples.time - time_old).toSeconds();
+
+            /** Output information **/
+            _raw_sensors.write(imusamples);
+
+            _calibrated_sensors.write(imusamples);
+        }
+
+
+        _device_temperature.write(base::Temperature::fromCelsius(boost::numeric_cast<double>(kvh_driver->getTemperature())));
+
+        _timestamp_estimator_status.write(timestamp_estimator->getStatus());
+
+        roll_old = roll;
+        time_old = imusamples.time;
     }
 }
 

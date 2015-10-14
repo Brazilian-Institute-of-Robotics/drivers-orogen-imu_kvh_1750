@@ -16,10 +16,11 @@ namespace imu_kvh_1750 {
     class Task : public TaskBase
     {
 	friend class TaskBase;
-
     protected:
         /** Driver variables **/
         int timeout_counter;
+        double roll_old;
+        base::Time time_old;
         boost::shared_ptr<imu_kvh_1750::Driver> kvh_driver;
         boost::shared_ptr<aggregator::TimestampEstimator> timestamp_estimator;
         int fd;
