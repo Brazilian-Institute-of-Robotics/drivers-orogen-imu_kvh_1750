@@ -3,7 +3,7 @@
 #include "Task.hpp"
 #include <imu_kvh_1750/Driver.hpp>
 #include <base/samples/IMUSensors.hpp>
-#include <base/logging.h>
+#include <base-logging/Logging.hpp>
 #include <Eigen/Geometry>
 #include <boost/numeric/conversion/cast.hpp>
 
