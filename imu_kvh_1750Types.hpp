@@ -1,8 +1,8 @@
 #ifndef IMU_KVH_1750_TYPE_HPP
 #define IMU_KVH_1750_TYPE_HPP
 
-#include <base/time.h>
-#include <base/temperature.h>
+#include <base/Time.hpp>
+#include <base/Temperature.hpp>
 #include <base/Eigen.hpp>
 #include <vector>
 
