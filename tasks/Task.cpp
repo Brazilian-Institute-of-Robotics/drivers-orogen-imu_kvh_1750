@@ -56,12 +56,6 @@ bool Task::configureHook()
 	return false;
     }
     
-    timestamp_estimator.reset(new aggregator::TimestampEstimator(
-	base::Time::fromSeconds(20),
-	base::Time::fromSeconds(1.0 / _sampling_frequency.value()),
-	base::Time::fromSeconds(0),
-	INT_MAX));
-
     return true;
 }
 
@@ -69,6 +63,12 @@ bool Task::startHook()
 {
     if (! TaskBase::startHook())
         return false;
+
+    timestamp_estimator.reset(
+	base::Time::fromSeconds(20),
+	base::Time::fromSeconds(1.0 / _sampling_frequency.value()),
+	base::Time::fromSeconds(0),
+	INT_MAX);
 
     RTT::extras::FileDescriptorActivity* activity =
         getActivity<RTT::extras::FileDescriptorActivity>();
@@ -113,7 +113,7 @@ void Task::updateHook()
 	    imusamples.gyro = imusamples.gyro * _sampling_frequency.value();
 
 	/** Estimate the current timestamp */
-	imusamples.time = timestamp_estimator->update(imusamples.time, kvh_driver->getCounter());
+	imusamples.time = timestamp_estimator.update(imusamples.time, kvh_driver->getCounter());
 
 	/** Output information **/
 	_raw_sensors.write(imusamples);
@@ -122,7 +122,7 @@ void Task::updateHook()
 	
 	_device_temperature.write(base::Temperature::fromCelsius(boost::numeric_cast<double>(kvh_driver->getTemperature())));
 
-	_timestamp_estimator_status.write(timestamp_estimator->getStatus());
+	_timestamp_estimator_status.write(timestamp_estimator.getStatus());
     }
 }
 
@@ -142,8 +142,6 @@ void Task::stopHook()
         //set timeout back so we don't timeout on the rtt's pipe
 	activity->setTimeout(0);
     }
-
-    timestamp_estimator->reset();
 }
 
 void Task::cleanupHook()
@@ -151,6 +149,5 @@ void Task::cleanupHook()
     TaskBase::cleanupHook();
     kvh_driver->close();
     fd = 0;
-    timestamp_estimator.reset();
     kvh_driver.reset();
 }

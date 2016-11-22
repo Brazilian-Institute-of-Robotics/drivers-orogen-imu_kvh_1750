@@ -21,7 +21,7 @@ namespace imu_kvh_1750 {
         /** Driver variables **/
         int timeout_counter;
         boost::shared_ptr<imu_kvh_1750::Driver> kvh_driver;
-        boost::shared_ptr<aggregator::TimestampEstimator> timestamp_estimator;
+        aggregator::TimestampEstimator timestamp_estimator;
         int fd;
 
     public:
