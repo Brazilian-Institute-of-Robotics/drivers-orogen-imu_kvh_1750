@@ -11,4 +11,5 @@
   <depend package="base/types" />
   <depend package="drivers/imu_kvh_1750" />
   <depend package="drivers/orogen/aggregator" />
+  <depend package="drivers/orogen/iodrivers_base" />
 </package>

@@ -1,5 +1,7 @@
 name "imu_kvh_1750"
 
+using_task_library 'iodrivers_base'
+
 import_types_from "base"
 import_types_from "imu_kvh_1750Types.hpp"
 using_library "imu_kvh_1750"
@@ -8,22 +10,16 @@ import_types_from 'aggregator'
 
 task_context "Task" do
     needs_configuration
+    subclasses 'iodrivers_base::Task'
 
-    property("device", "string" ,"/dev/ttyUSB0").
-	doc 'the device port'
+    # The sampling frequency of the device. by default 100Hz.
+    property 'sampling_frequency', 'double', 100.0
 
-    property('timeout', 'double', 0.01).
-	doc 'the expected time (in seconds) to have a whole package in the fd'+
-	'by default 10 milliseconds (0.01 seconds) which corresponds to 100Hz.'
-	
-    property('sampling_frequency', 'double', 100.0).
-	doc 'the sampling frequency of the device. by default 100Hz.'
+    # True if the gyroscope output of the IMU is in delta rotations.
+    property 'gyroscope_delta_rotation', 'bool', false
 
-    property('gyroscope_delta_rotation', 'bool', false).
-        doc('True if the gyroscope output of the IMU is in delta rotations.')
-
-    property('axes_orientation', '/base/Matrix3d').
-	doc 'Orientation of the device axes in the local device frame.'
+    # Orientation of the device axes in the local device frame.
+    property 'axes_orientation', '/base/Matrix3d'
 
 
     #******************************
@@ -41,7 +37,5 @@ task_context "Task" do
 
     output_port('timestamp_estimator_status', 'aggregator::TimestampEstimatorStatus').
 	doc("Debug output of the TimestampEstimator")
-
-    fd_driven
 end
 
