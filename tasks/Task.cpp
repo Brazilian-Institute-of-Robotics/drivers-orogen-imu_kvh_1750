@@ -94,37 +94,35 @@ void Task::updateHook()
 	RTT::log(RTT::Warning) << "File descriptor activity timeout." << RTT::endlog();
     if(act->isUpdated(fd))
     {
-        base::samples::IMUSensors imusamples;
-        if(kvh_driver->read())
-        {
-            imusamples = kvh_driver->getIMUReading();
+	base::samples::IMUSensors imusamples;
+	kvh_driver->read();
+	imusamples = kvh_driver->getIMUReading();
 
-            /** rotate measurments to the local frame */
-            if(!_axes_orientation.value().isZero())
-            {
-                imusamples.acc = _axes_orientation.value() * imusamples.acc;
-                imusamples.gyro = _axes_orientation.value() * imusamples.gyro;
-            }
+	/** rotate measurments to the local frame */
+	if(!_axes_orientation.value().isZero())
+	{
+	    imusamples.acc = _axes_orientation.value() * imusamples.acc;
+	    imusamples.gyro = _axes_orientation.value() * imusamples.gyro;
+	}
 
-            /** acceleration in m/s^2 */
-            imusamples.acc = imusamples.acc * GRAVITY_SI; //g to m/s^2, KVH puts out acceleration in g
+	/** acceleration in m/s^2 */
+	imusamples.acc = imusamples.acc * GRAVITY_SI; //g to m/s^2, KVH puts out acceleration in g
 
-            if(_gyroscope_delta_rotation.value())
-                /** gyroscopes in rad/s, KVH puts out the integrated delta rotation */
-                imusamples.gyro = imusamples.gyro * _sampling_frequency.value();
+    if(_gyroscope_delta_rotation.value())
+	    /** gyroscopes in rad/s, KVH puts out the integrated delta rotation */
+	    imusamples.gyro = imusamples.gyro * _sampling_frequency.value();
 
 	/** Estimate the current timestamp */
 	imusamples.time = timestamp_estimator->update(imusamples.time, kvh_driver->getCounter());
 
-            /** Output information **/
-            _raw_sensors.write(imusamples);
+	/** Output information **/
+	_raw_sensors.write(imusamples);
 
-            _calibrated_sensors.write(imusamples);
+	_calibrated_sensors.write(imusamples);
+	
+	_device_temperature.write(base::Temperature::fromCelsius(boost::numeric_cast<double>(kvh_driver->getTemperature())));
 
-            _device_temperature.write(base::Temperature::fromCelsius(boost::numeric_cast<double>(kvh_driver->getTemperature())));
-
-            _timestamp_estimator_status.write(timestamp_estimator->getStatus());
-        }
+	_timestamp_estimator_status.write(timestamp_estimator->getStatus());
     }
 }
 
