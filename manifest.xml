@@ -4,7 +4,7 @@
   </description>
   <author>Christopher Gaudig/christopher.gaudig@dfki.de</author>
   <author>Leif Christensen/leif.christensen@dfki.de</author>
-  <license></license>
+  <license>BSD 3-Clause</license>
   <url>http://</url>
   <logo>http://</logo>
   <depend package="base/cmake" />
